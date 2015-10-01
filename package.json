@@ -1,0 +1,17 @@
+{
+  "name": "rethink-emitter",
+  "version": "1.0.0",
+  "description": "Remote Event Emitter using RethinkDB for transport",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "event",
+    "eventemitter",
+    "rethinkdb",
+    "ipc"
+  ],
+  "author": "Andrew Brown <anydb@formulatoast.com>",
+  "license": "MIT"
+}
