@@ -16,6 +16,9 @@ class RethinkEmitter extends Queuer
 		@options = options = options || {}
 		@options.table     = options.table || 'events'
 
+		@once 'ready', onceReady if typeof onceReady is 'function'
+		@once 'ready', @resume
+
 		async.waterfall [
 			# connect to rethinkdb database server
 			(callback) =>
@@ -55,33 +58,42 @@ class RethinkEmitter extends Queuer
 
 		], (error) =>
 			debug { options_table: @options.table }
-			throw error if error?
-			onceReady @options if onceReady?
-			@resume()
+			@__local_emit 'error', error if error?
+			@__local_emit 'ready', @options
 			
 
+	# internal emit method for triggering a local emit without
+	# writing the event log to the transport or queueing it.
+	# This can be used for process control events (ie. 'error' 
+	# and 'ready' events) or for triggering the local emit when
+	# one is seen over the transport.  Pretty much any time an
+	# @emit would be called inside the class, it should use this
+	# instead of the standard one to ensure that no transport
+	# loops are created and that async does not try loading callbacks
+	# that no longer exists, as was the problem before.
+	__local_emit: (event, args...) ->
+		debug { __local_emit: event, args: args }
+		Queuer::emit.call @, event, args...
 
 	emit: (event, args...) ->
 		debug { emit: event, args: args }
 		@__push 'emit', arguments
-		super event, args...
+		@__local_emit event, args...
 		return this
 
 	__emit: (event, args..., done) ->
 		__table = r.table @options.table
 		__conn  = @options.connection
 
-		debug { __emit: event, args: args, done: done.toString() }
+		debug { __emit: event, args: args }
 
 		record = { tag: @options.tag, event: event, args: args }
 		record.origin  = os.hostname() if @options.origin
 		record.sent_at = r.now() if @options.timestamp
 
-		test = __table.insert(record).run __conn, (error, results) ->
+		__table.insert(record).run __conn, (error, results) ->
 			throw error if error?
-
 			debug { inserted: record, error: error, results: results }
-			debug { done: done.toString() }
 			done()
 
 
@@ -89,20 +101,19 @@ if require.main is module
 	debug { testing: __filename }
 
 	options = 
-		host: '192.168.1.14'
-		port:  28015
-		db:   'dev'
+		host:     '192.168.1.14'
+		port:      28015
+		db:       'dev'
+		origin:    yes
+		timestamp: yes
 
-	emitter = new RethinkEmitter options, (options) -> debug { event: 'constructor - ready', options: options }
+	emitter = new RethinkEmitter options, (options) -> 
+		debug { event: 'ready(constructor)', options: options }
+
+	emitter.on 'ready', (options) ->
+		debug { event: 'ready(emitter.on)', options: options }
 
 	emitter.emit 'test', 'something'
 	emitter.emit 'test2', 'something else'
-	emitter.emit 'test3', 'another something'
-	emitter.emit 'test3', 'another something'
-	emitter.emit 'test3', 'another something'
-	emitter.emit 'test3', 'another something'
-	emitter.emit 'test3', 'another something'
-	emitter.emit 'test3', 'another something'
-	emitter.emit 'test3', 'another something'
 	emitter.emit 'test3', 'another something'
 
