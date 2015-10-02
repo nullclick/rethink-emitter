@@ -40,6 +40,21 @@ class RethinkEmitter extends Queuer
 					debug { table_exists: options.table } if error?
 					callback null, connection
 
+			# create an index on the tag field of records in the table
+			(connection, callback) ->
+				debug { creating_index: 'tag' }
+				r.table(options.table).indexCreate('tag').run connection, (error, results) ->
+					# suppress error (for pre-existing table index)
+					debug { creating_index: error, results: results }
+					callback null, connection
+					
+			# wait for secondary index on tag to become availabe
+			(connection, callback) ->
+				debug { indexWait: 'tag' }
+				r.table(options.table).indexWait().run connection, (error, results) ->
+					debug { indexWait: 'complete' }
+					callback null, connection
+
 			# create a uuid to use for this emitter if required
 			(connection, callback) ->
 				if options.tag
