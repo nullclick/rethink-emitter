@@ -23,7 +23,7 @@ class RethinkEmitter extends Queuer
 			# connect to rethinkdb database server
 			(callback) =>
 				if options.connection
-					debug { connecting: 'skip', connection: connection }
+					debug { connecting: 'skip', connection: options.connection }
 					callback null, options.connection
 				else
 					debug { connecting: options }
@@ -67,9 +67,21 @@ class RethinkEmitter extends Queuer
 						callback error, connection
 
 			# create changeset listener for incomming emit calls
-			(connection, callback) ->
+			(connection, callback) =>
 				debug { changeset_listener: options.tag }
-				callback null, connection
+				r.table(options.table)
+					.getAll(options.tag, { index: 'tag' })
+					.changes()
+					.filter r.row('old_val').eq(null)
+					.run connection, (error, cursor) =>
+						callback error, connection
+
+						cursor.on 'error', (error) -> throw error if error?
+
+						cursor.on 'data', (item) =>
+							event = item.new_val
+							debug { change: event }
+							@__local_emit event.event, event.args..., event
 
 		], (error) =>
 			debug { options_table: @options.table }
@@ -127,6 +139,18 @@ if require.main is module
 
 	emitter.on 'ready', (options) ->
 		debug { event: 'ready(emitter.on)', options: options }
+
+		listener = new RethinkEmitter options, (options) ->
+			debug { event: 'ready(listener)', options: options }
+
+		listener.on 'test', (something, event) ->
+			debug { received: 'test', event: event }
+
+		listener.on 'test2', (something, event) ->
+			debug { received: 'test2', event: event }
+
+		listener.on 'test3', (something, event) ->
+			debug { received: 'test3', event: event }
 
 	emitter.emit 'test', 'something'
 	emitter.emit 'test2', 'something else'
