@@ -105,7 +105,7 @@ class RethinkEmitter extends Queuer
 	emit: (event, args...) ->
 		debug { emit: event, args: args }
 		@__push 'emit', arguments
-		@__local_emit event, args...
+		#@__local_emit event, args...
 		return this
 
 	__emit: (event, args..., done) ->
@@ -151,8 +151,19 @@ if require.main is module
 
 		listener.on 'test3', (something, event) ->
 			debug { received: 'test3', event: event }
+			
+		emitter.emit 'test', 'something'
+		emitter.emit 'test2', 'something else'
+		emitter.emit 'test3', 'another something'
 
-	emitter.emit 'test', 'something'
-	emitter.emit 'test2', 'something else'
-	emitter.emit 'test3', 'another something'
+	emitter.on 'test', (something, event) ->
+		debug { remitted: 'test', event: event }
+
+	emitter.on 'test2', (something, event) ->
+		debug { remitted: 'test2', event: event }
+
+	emitter.on 'test3', (something, event) ->
+		debug { remitted: 'test3', event: event }
+
+
 
