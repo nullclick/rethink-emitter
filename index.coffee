@@ -132,6 +132,9 @@ class RethinkEmitter extends Queuer
 			done()
 
 
+module.exports = RethinkEmitter
+
+
 
 
 if require.main is module
