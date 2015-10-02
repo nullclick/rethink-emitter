@@ -1,0 +1,16 @@
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.stackdump
+
+# npm modules and logs
+node_modules
+npm-debug.log
+
+# tinker toy test files
+tinker.*
