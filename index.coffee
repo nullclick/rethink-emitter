@@ -8,21 +8,6 @@ debug = require('debug') 'rethink-emitter'
 r     = require 'rethinkdb'
 
 
-
-# internal emitting for process control
-# I'm not sure exactly what the issue is, but using the @emit where this is used
-# causes the rethinkdb (and/or async) to totally lose it's shit.  I'm sure it's
-# something stupid i'm doing with the Queuer functionality that's causing async
-# to trigger a listener that falls out of scope.  It looks like somewhere I am
-# leaving rethinkdb a function expression that doesn't exist?  Tracing through
-# this is proving to be a total pain in the ass, and this cheap hack works well
-# enough for now since it's not really necessary to be writing and remote emitting
-# process control events.  I could also just replace the emits with direct code.
-local_emit = (obj, event, args...) ->
-	debug { direct_emit: event, args: args }
-	Queuer::emit.call obj, event, args...
-
-
 class RethinkEmitter extends Queuer
 
 	constructor: (options, onceReady) ->
