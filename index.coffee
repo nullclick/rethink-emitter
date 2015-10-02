@@ -1,3 +1,11 @@
+### 
+@module  rethink-emitter
+@version 1.0.0
+@license MIT
+@author  nullclick (Andy Brown) <andyb at formulatoast dot com>
+
+@todo document this module and write tests for everything
+###
 
 os = require 'os'
 
@@ -124,6 +132,8 @@ class RethinkEmitter extends Queuer
 			done()
 
 
+
+
 if require.main is module
 	debug { testing: __filename }
 
@@ -151,7 +161,7 @@ if require.main is module
 
 		listener.on 'test3', (something, event) ->
 			debug { received: 'test3', event: event }
-			
+
 		emitter.emit 'test', 'something'
 		emitter.emit 'test2', 'something else'
 		emitter.emit 'test3', 'another something'
@@ -164,6 +174,3 @@ if require.main is module
 
 	emitter.on 'test3', (something, event) ->
 		debug { remitted: 'test3', event: event }
-
-
-
