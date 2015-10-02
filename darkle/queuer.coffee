@@ -34,7 +34,11 @@ class Queuer extends Darkle
 
 		@__queue = async.queue (task, callback) =>
 			args = Array::slice.call task.args
-			@[task.method].apply @, args.concat callback
+			done = =>
+				debug { done: task.method }
+				callback null
+			debug { dispatch: task.method, args: args }
+			@[task.method].apply @, args.concat done
 
 		@__queue.pause() unless running
 
@@ -42,7 +46,9 @@ class Queuer extends Darkle
 	###
 	Resume processing of the queue.
 	###
-	resume: -> @__queue.resume()
+	resume: -> 
+		debug { resuming: @__queue.length() }
+		@__queue.resume()
 
 
 	###
@@ -51,6 +57,12 @@ class Queuer extends Darkle
 	@private
 	@param {string} name - name of method that will be called
 	@param {Array}  args - array of arguments to pass to method
+
+	@example
+		emit: (event, args...) ->
+			debug { emit: event, args: args }
+			@__push 'emit', args
+			super event, args...
 	###
 	__push: (name, args) ->
 		debug { method: 'Queuer#__push', name: name, args: args }
@@ -100,7 +112,9 @@ class Queuer extends Darkle
 		# processes the call.  Attach the `done()` function and 
 		# return true so that done() can be chained when called
 		# ie. return done() and callback null
-		@["__#{name}"] = (args..., done) -> method args..., -> done() or yes
+		@["__#{name}"] = (args..., done) ->  method args..., -> done() or yes
+
+		@emit 'method-added', name, method
 
 		return this
 
